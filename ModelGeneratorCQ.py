@@ -23,7 +23,8 @@ class ModelGeneratorCQ:
                  inner_bridge_thickness=0.5,
                  funnel_length_y=8.0,
                  funnel_length_x=6.0,
-                 funnel_tangent_ratio=0.3):
+                 funnel_tangent_ratio=0.3,
+                 is_dual_chip=False):
         self.chip_width = chip_width
         self.chip_height = chip_height
         self.glass_padding = glass_padding
@@ -37,6 +38,7 @@ class ModelGeneratorCQ:
         self.funnel_length_y = funnel_length_y
         self.funnel_length_x = funnel_length_x
         self.funnel_tangent_ratio = funnel_tangent_ratio
+        self.is_dual_chip = is_dual_chip
 
     def _clean_pts(self, coords):
         pts = []
@@ -172,10 +174,10 @@ class ModelGeneratorCQ:
             funnel_inlet_x, funnel_outlet_x
         ])
         
-        # 3. Firing up OpenCASCADE Solid Builder
-        physical_w = self.chip_width + (2 * self.glass_padding)
-        physical_h = self.chip_height + (2 * self.glass_padding)
-        chip = cq.Workplane("XY").box(physical_w, physical_h, total_thickness).translate((0, 0, total_thickness/2.0))
+        
+        # 3. OpenCASCADE Solid Builder
+        # Step 1: Create the base chip body (core 25x40 frame)
+        chip = cq.Workplane("XY").box(self.chip_width, self.chip_height, total_thickness).translate((0, 0, total_thickness/2.0))
         
         def cut_polygon_from_chip(master_chip, poly):
             if poly.is_empty or poly.geom_type != 'Polygon':
@@ -208,6 +210,45 @@ class ModelGeneratorCQ:
             .extrude(-drill_depth) 
         )
         chip = chip.cut(holes)
+        
+        # --- MIRROR OPERATION ---
+        if self.is_dual_chip:
+            # Since the chip is centered, move it so the left edge (X = -12.5) is at X = 0
+            shift_x = self.chip_width / 2.0
+            center_space = 0.5 / 2.0
+            chip = chip.translate((shift_x + center_space, 0, 0))
+            # Mirror across the origin's YZ plane and union
+            chip = chip.mirror("YZ", union=True)
+            
+            # --- FILL THE CENTER HOLE ---
+            filler = (
+                cq.Workplane("XY")
+                .box(center_space * 2, self.chip_height, total_thickness)
+                .translate((0, 0, total_thickness / 2.0))
+            )
+            chip = chip.union(filler)
+
+        # --- ADD PADDING AFTER MIRROR ---
+        if self.glass_padding > 0:
+            # Calculate final assembly width (one chip or dual + center space)
+            if self.is_dual_chip:
+                base_total_w = (self.chip_width * 2) + 0.5
+            else:
+                base_total_w = self.chip_width
+            base_total_h = self.chip_height
+            
+            final_w = base_total_w + (2 * self.glass_padding)
+            final_h = base_total_h + (2 * self.glass_padding)
+            
+            # Create a hollow frame to avoid filling internal holes/channels
+            frame = (
+                cq.Workplane("XY")
+                .box(final_w, final_h, total_thickness)
+                .cut(cq.Workplane("XY").box(base_total_w, base_total_h, total_thickness + 1.0))
+                .translate((0, 0, total_thickness / 2.0))
+            )
+            # Union the frame with our assembly
+            chip = chip.union(frame)
         
         # 5. Saving pure mathematical STEP + STL file
         out_step = f"{output_filename}.step"

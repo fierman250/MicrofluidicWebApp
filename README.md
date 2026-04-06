@@ -1,52 +1,59 @@
-# Microfluidic Property Prediction — Web App
+# Microfluidic Property Prediction & CAD Solid Modeling
 
-A web-based platform for predicting material properties (mechanical & thermal) of microfluidic channel geometries using deep learning. Built with **FastAPI** (backend) and **React** (frontend).
+A high-performance, web-based engineering platform for predicting material properties (mechanical & thermal) and generating industrial-grade 3D CAD models of microfluidic systems.
 
-> [!NOTE]
-> Model weights (`*.pth`, ~140 MB) are stored using **Git LFS**. Run `git lfs pull` after cloning to download them.
+This application combines **Deep Learning** (for property prediction) with **Analytical Solid Modeling** (via CadQuery) to bridge the gap between AI-driven design and physical manufacturing.
 
----
-
-## Features
-
-- **Pattern Selection Grid** — Draw your microfluidic channel path on a 9×3 interactive grid (drag to select, like a phone pattern lock)
-- **Deep Learning Prediction** — Predicts 12 material properties (Young's Modulus, Yield Strength, Poisson's Ratio, Thermal Conductivity, Thermal Expansion) from the pattern
-- **Flow Path Visualization** — Renders the generated flow path image after prediction
-- **3D Model Viewer** — Generates and displays an interactive transparent 3D model in your browser
-- **CAD Downloads** — Export the perfectly engineered microfluidic manifold as industrial `.step` or 3D-printable `.stl` files
+> [!IMPORTANT]
+> **CadQuery Integration**: This version uses a pure vector-based OpenCASCADE engine. Exported `.step` files are manifold-solid and ready for industrial CNC/SLA production.
 
 ---
 
-## Requirements
+## 🚀 Key Features
 
-### System
-- **Python** 3.8 or higher
-- **Node.js** 18 or higher (with npm)
-- A **conda** environment (recommended) or virtualenv
+- **Interactive Pattern Grid** — Define complex microfluidic paths on a 9×3 grid with a smooth, drag-to-select interface.
+- **AI Property Prediction** — Instantly predicts 12 critical mechanical and thermal properties using a pre-trained Deep Learning model.
+- **True-MM 3D Engine** — Generates precise 3D solids based on real-world millimeter dimensions (depth, width, and spacing).
+- **Dual Channel Mode** — One-click mirroring to create perfectly symmetrical, dual-system microfluidic chips with internal partition walls.
+- **Industrial CAD Export** — Export functional designs as analytical `.step` files or high-fidelity `.stl` meshes.
+- **Integrated 3D Viewer** — Real-time high-fidelity 3D visualization within the web interface (powered by React Three Fiber).
 
-### Python Packages (Backend)
-Install all backend dependencies:
+---
+
+## 🛠️ Technology Stack
+
+### Backend (Python/FastAPI)
+
+- **FastAPI/Uvicorn** — High-performance asynchronous API layer.
+- **CadQuery & OpenCASCADE** — Industrial-grade analytical solid modeling.
+- **Shapely** — 2D vector path offsetting and boolean operations.
+- **PyTorch** — Deep Learning inference engine for property prediction.
+- **Numpy/Pillow** — Matrix math and image-based pattern representation.
+
+### Frontend (React/Vite)
+
+- **Three.js / React Three Fiber** — High-fidelity 3D rendering in the browser.
+- **Lucide Icons** — Beautiful, consistent UI iconography.
+- **Vanilla CSS** — Custom premium glassmorphism design system.
+
+---
+
+## ⚙️ Installation & Setup
+
+### 1. Backend Setup
+
+We recommend using **Conda** to manage Python dependencies (required for CadQuery).
 
 ```bash
+# Clone the repository
+git clone <repo-url>
+cd Microfluidic-WebApp
+
+# Install Python dependencies
 pip install -r requirements.txt
 ```
 
-Key packages:
-| Package | Purpose |
-|---|---|
-| `fastapi` | Web API framework |
-| `uvicorn` | ASGI server |
-| `torch` | Deep learning inference |
-| `numpy` | Numerical computation |
-| `Pillow` | Image processing |
-| `matplotlib` | Flow path rendering |
-| `cadquery` | Microfluidic true-MM physical solid modeling |
-| `shapely` | Geometric path offsetting |
-| `scikit-learn` | Data scaling |
-| `joblib` | Model/scaler loading |
-
-### Node.js Packages (Frontend)
-Install all frontend dependencies:
+### 2. Frontend Setup
 
 ```bash
 cd frontend
@@ -55,82 +62,56 @@ npm install
 
 ---
 
-## How to Run
+## 🏃 How to Run
 
-### Step 1 — Start the Backend
-
-Open a terminal in the project root (`WebAPP/`) and run:
-
-```bash
-python -m uvicorn main:app --reload
-```
-
-The backend API will be available at: `http://127.0.0.1:8000`
-
-> If using conda, activate your environment first:
-> ```bash
-> conda activate <your_env_name>
-> ```
+1. **Start Backend**: From the root directory:
+   ```bash
+   python -m uvicorn main:app --reload
+   ```
+2. **Start Frontend**: From the `frontend/` directory:
+   ```bash
+   npm run dev
+   ```
+3. **Open Browser**: Navigate to `http://localhost:5173`
 
 ---
 
-### Step 2 — Start the Frontend
+## 📖 Usage Guide
 
-Open a **second terminal** in the `frontend/` directory and run:
-
-```bash
-cd frontend
-npm run dev
-```
-
-The web app will be available at: `http://localhost:5173`
-
-Open this URL in your browser.
-
----
-
-## Usage
-
-1. **Set Parameters** — Enter Channel Depth, Width, and Space values in the Parameters panel.
-2. **Draw Pattern** — Click and drag across dots on the Pattern Selection grid (row 1 → 9, up to 2 dots per row). Click **"? How to Use"** for a guide.
-3. **Generate & Predict** — Click the **"Generate & Predict"** button to run the deep learning model.
-4. **View Results** — The Flow Visualization image and predicted material properties will appear on the right.
-5. **Generate 3D Model** — Click **"Generate 3D Model"** to build and open the interactive 3D viewer popup.
-6. **Download STL or STEP** — Use the respective download buttons to save your fully analytic 3D files.
+1. **Configure Fluidics**: Set your channel depth, width, and spacing in the main panel.
+2. **Define Pattern**: Draw your fluid path on the interactive grid. Use the **"? How to Use"** guide for path rules.
+3. **Predict Properties**: Click **"Generate & Predict"** to calculate material behaviors.
+4. **Tune 3D Geometry**: Adjust physical parameters in the **3D Model Overview** panel:
+   - **Inlet Diameter**: Size of the fluid ports.
+   - **Inlet Y-Position**: Distance of ports from the chip center.
+   - **Layer Thicknesses**: Upper, middle, and bottom plate dimensions.
+5. **Enable Dual Channel**: Click the **"Dual Channel"** toggle in the header to mirror your system.
+6. **Generate & Export**: Click **"Generate 3D Model"** to view and download your engineered STEP/STL files.
 
 ---
 
-## Project Structure
+## 📂 Project Structure
 
 ```
 WebAPP/
-├── main.py                  # FastAPI backend entry point
-├── iGenerator.py            # Flow path generation & DL prediction
-├── ModelGeneratorCQ.py        # Flawless CAD engine (CadQuery) scaling True MMs
-├── requirements.txt         # Python dependencies
+├── main.py                  # API entry point & coordinate interpreter
+├── ModelGeneratorCQ.py      # Core Solid Modeling Engine (CadQuery/OpenCASCADE)
+├── iGenerator.py            # AI Prediction & Fluid Mask Generator
 ├── Repository/
-│   ├── DLModel.py           # PyTorch model architecture (CombinedNet)
-│   ├── best_model_TRCodev3GA-Run2.pth   # Pre-trained model weights
-│   ├── best_scaler_TRCodev3GA-Run2.pkl  # Output scaler
-│   ├── cnums_lookup.py      # Channel number lookup table
-│   ├── pointinterpreter.py  # Grid point → physical coordinate mapping
-│   └── howtousepointselector.png  # In-app usage guide image
+│   ├── best_model_*.pth      # Trained DL weights (Mechanical/Thermal)
+│   ├── 3dmodel_guide.png     # Geometry config help image
+│   └── howtousepointselector.png  # Interactive grid help image
+├── 3DModelDev/              # Analytical sandbox for mirroring experiments
 └── frontend/
     ├── src/
-    │   ├── App.jsx           # Main React application
-    │   ├── GridSelector.jsx  # Pattern selection grid component
-    │   ├── ModelViewer.jsx   # 3D STL viewer (Three.js / R3F)
-    │   └── index.css         # Global styles (glassmorphism theme)
-    └── public/
-        └── howtousepointselector.png
+    │   ├── App.jsx           # Main UI & state orchestration
+    │   ├── ModelViewer.jsx   # Integrated R3F 3D viewing component
+    │   └── GridSelector.jsx  # 2D pattern selection logic
+    └── public/               # Static assets & help guides
 ```
 
 ---
 
-## API Endpoints
+## 📄 License
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/predict` | Run prediction & return properties + flow image |
-| `POST` | `/api/generate-model` | Generate 3D geometry, return browser-ready STL |
-| `GET` | `/api/download-step` | Download generated analytical CAD STEP file |
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

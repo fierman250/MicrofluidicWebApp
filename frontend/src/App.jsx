@@ -23,6 +23,8 @@ function App() {
   const [bottomThickness, setBottomThickness] = useState(0.5);
   const [inletDiameter, setInletDiameter] = useState(6.0);
   const [inletYDist, setInletYDist] = useState(16.5);
+  const [isDualChip, setIsDualChip] = useState(false);
+  const [showModelGuide, setShowModelGuide] = useState(false);
   
   const clearGridRef = useRef(null);
 
@@ -54,14 +56,6 @@ function App() {
         cdepth: parseFloat(cdepth),
         cwidth: parseFloat(cwidth),
         cspace: parseFloat(cspace),
-        // Just send empty coordinates, backend will use dictionary point names if we map them
-        // Wait, backend expects tuples of floats?
-        // Ah, the desktop app `interpret_points` uses the names "1A", "2B"
-        // Let's modify the frontend payload. Wait, `main.py` expects `List[Tuple[float, float]]`
-        // Oh! In `MicrofluidicGUI_v4.py`, it calculates the tuple from the dictionary.
-        // Let's just send the point strings and calculate in the backend?
-        // Wait, I forgot `interpret_points` is in the GUI not backend!
-        // No, I need to send the names! Let me check `main.py` soon.
         selected_points: selectedPoints
       };
       
@@ -91,7 +85,8 @@ function App() {
         upper_thickness: parseFloat(upperThickness),
         bottom_thickness: parseFloat(bottomThickness),
         inlet_diameter: parseFloat(inletDiameter),
-        inlet_y_dist: parseFloat(inletYDist)
+        inlet_y_dist: parseFloat(inletYDist),
+        is_dual_chip: isDualChip
       };
       
       const response = await axios.post(`${API_BASE_URL}/api/generate-model`, payload, {
@@ -224,7 +219,70 @@ function App() {
           </div>
 
           <div className="glass-panel preview-area">
-            <h2><Box size={24} color="var(--primary)" /> Microfludic 3D Model Overview</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <h2 style={{ margin: 0 }}><Box size={24} color="var(--primary)" /> Microfludic 3D Model Overview</h2>
+              <div style={{ display: 'flex', gap: '0.6rem' }}>
+                <button
+                  onClick={() => setIsDualChip(v => !v)}
+                  style={{
+                    background: isDualChip ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255, 255, 255, 0.03)',
+                    border: isDualChip ? '1px solid rgba(59, 130, 246, 0.6)' : '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    color: isDualChip ? '#93c5fd' : '#94a3b8',
+                    cursor: 'pointer',
+                    padding: '0.4rem 0.85rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    transition: 'all 0.2s',
+                    flexShrink: 0,
+                    boxShadow: isDualChip ? '0 0 12px rgba(59, 130, 246, 0.2)' : 'none',
+                  }}
+                  title="Enable Dual Channel mirroring"
+                >
+                  <Activity size={14} style={{ color: isDualChip ? 'var(--primary)' : 'inherit' }} />
+                  Dual Channel: {isDualChip ? 'ON' : 'OFF'}
+                </button>
+                <button
+                  onClick={() => setShowModelGuide(v => !v)}
+                  style={{
+                    background: 'rgba(59, 130, 246, 0.15)',
+                    border: '1px solid rgba(59, 130, 246, 0.4)',
+                    borderRadius: '8px',
+                    color: '#93c5fd',
+                    cursor: 'pointer',
+                    padding: '0.4rem 0.85rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    transition: 'all 0.2s',
+                    flexShrink: 0,
+                  }}
+                >
+                  {showModelGuide ? '✕ Hide' : '? 3D Model Guide'}
+                </button>
+              </div>
+            </div>
+
+            {showModelGuide && (
+              <div style={{
+                marginBottom: '1rem',
+                borderRadius: '10px',
+                overflow: 'hidden',
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(0,0,0,0.25)',
+              }}>
+                <img
+                  src="/3dmodel_guide.png"
+                  alt="3D Model Guide"
+                  style={{ width: '100%', display: 'block' }}
+                />
+              </div>
+            )}
 
             <div className="preview-box" style={{ padding: 0, overflow: 'hidden', width: '100%', aspectRatio: '2 / 1', display: 'flex', flexDirection: 'column' }}>
               {isLoading || isModelLoading ? (

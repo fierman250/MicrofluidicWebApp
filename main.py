@@ -31,6 +31,7 @@ class PredictionRequest(BaseModel):
     bottom_thickness: float = 0.5
     inlet_diameter: float = 6.0
     inlet_y_dist: float = 16.5
+    is_dual_chip: bool = False
 
 def interpret_points_backend(point_names: List[str], xbasic: float, ybasic: float) -> List[Tuple[float, float]]:
     points = []
@@ -115,6 +116,7 @@ async def generate_model(request: PredictionRequest):
             bottom_thickness=request.bottom_thickness,
             inlet_diameter=request.inlet_diameter,
             inlet_y_dist=request.inlet_y_dist,
+            is_dual_chip=request.is_dual_chip,
             outer_x_thickness=0.6,
             outer_y_thickness=0.8,
             inner_bridge_thickness=0.5,
@@ -140,27 +142,7 @@ async def generate_model(request: PredictionRequest):
         
     except Exception as e:
         import traceback
-        import sys
-        
-        # Diagnostic: Test mapbox_earcut directly to see WHY Trimesh couldn't use it
-        earcut_err = "No import error"
-        try:
-            import mapbox_earcut
-            try:
-                # Test if it runs
-                test_verts = [[0, 0], [1, 0], [1, 1], [0, 1]]
-                test_rings = [4]
-                mapbox_earcut.triangulate_float32(test_verts, test_rings)
-            except Exception as inner_e:
-                earcut_err = f"Run Error: {str(inner_e)}"
-        except ImportError as ie:
-            earcut_err = f"Import Error: {str(ie)}"
-            
-        with open("backend_error.log", "w") as f:
-            f.write(f"Mapbox Earcut Diagnostic:\n{earcut_err}\n\n")
-            f.write("Original Traceback:\n")
-            traceback.print_exc(file=f)
-            
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/download-step")
