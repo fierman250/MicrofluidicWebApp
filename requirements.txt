@@ -9,9 +9,8 @@ torchvision>=0.10.0
 Pillow>=8.0.0
 numpy>=1.21.0
 
-# 3D Visualization and Mesh Processing
-vispy>=0.9.0
-trimesh>=3.9.0
+# Solid Modeling and Geometry
+cadquery>=2.4.0
 
 # Geometric Operations
 shapely>=1.8.0

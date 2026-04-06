@@ -12,8 +12,8 @@ A web-based platform for predicting material properties (mechanical & thermal) o
 - **Pattern Selection Grid** — Draw your microfluidic channel path on a 9×3 interactive grid (drag to select, like a phone pattern lock)
 - **Deep Learning Prediction** — Predicts 12 material properties (Young's Modulus, Yield Strength, Poisson's Ratio, Thermal Conductivity, Thermal Expansion) from the pattern
 - **Flow Path Visualization** — Renders the generated flow path image after prediction
-- **3D Model Viewer** — Generates and displays an interactive 3D model in your browser
-- **STL Download** — Export the generated 3D geometry as an `.stl` file
+- **3D Model Viewer** — Generates and displays an interactive transparent 3D model in your browser
+- **CAD Downloads** — Export the perfectly engineered microfluidic manifold as industrial `.step` or 3D-printable `.stl` files
 
 ---
 
@@ -40,7 +40,7 @@ Key packages:
 | `numpy` | Numerical computation |
 | `Pillow` | Image processing |
 | `matplotlib` | Flow path rendering |
-| `trimesh` | 3D model processing |
+| `cadquery` | Microfluidic true-MM physical solid modeling |
 | `shapely` | Geometric path offsetting |
 | `scikit-learn` | Data scaling |
 | `joblib` | Model/scaler loading |
@@ -96,7 +96,7 @@ Open this URL in your browser.
 3. **Generate & Predict** — Click the **"Generate & Predict"** button to run the deep learning model.
 4. **View Results** — The Flow Visualization image and predicted material properties will appear on the right.
 5. **Generate 3D Model** — Click **"Generate 3D Model"** to build and open the interactive 3D viewer popup.
-6. **Download STL** — Click **"Download STL"** to save the geometry file.
+6. **Download STL or STEP** — Use the respective download buttons to save your fully analytic 3D files.
 
 ---
 
@@ -106,7 +106,7 @@ Open this URL in your browser.
 WebAPP/
 ├── main.py                  # FastAPI backend entry point
 ├── iGenerator.py            # Flow path generation & DL prediction
-├── ModelGenerator.py        # 3D model generation from image slices
+├── ModelGeneratorCQ.py        # Flawless CAD engine (CadQuery) scaling True MMs
 ├── requirements.txt         # Python dependencies
 ├── Repository/
 │   ├── DLModel.py           # PyTorch model architecture (CombinedNet)
@@ -114,8 +114,6 @@ WebAPP/
 │   ├── best_scaler_TRCodev3GA-Run2.pkl  # Output scaler
 │   ├── cnums_lookup.py      # Channel number lookup table
 │   ├── pointinterpreter.py  # Grid point → physical coordinate mapping
-│   ├── vox2STL.py           # Voxel volume → STL mesh converter
-│   ├── MMiddle_Mask.png     # Default middle layer mask (fallback)
 │   └── howtousepointselector.png  # In-app usage guide image
 └── frontend/
     ├── src/
@@ -134,4 +132,5 @@ WebAPP/
 | Method | Endpoint | Description |
 |---|---|---|
 | `POST` | `/api/predict` | Run prediction & return properties + flow image |
-| `POST` | `/api/generate-model` | Generate 3D STL model & return file |
+| `POST` | `/api/generate-model` | Generate 3D geometry, return browser-ready STL |
+| `GET` | `/api/download-step` | Download generated analytical CAD STEP file |

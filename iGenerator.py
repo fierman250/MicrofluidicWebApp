@@ -62,6 +62,16 @@ class iGenerator:
                          for i in range(1, 40)]
         return outside_pattern, inside_pattern
 
+    def get_shapely_objects(self, points, distance):
+        """Return the raw shapely geometry for everything."""
+        line = LineString(points)
+        outside_pattern, inside_pattern = self.offset(points, distance)
+        return {
+            'main_path': line,
+            'outside_pattern': outside_pattern,
+            'inside_pattern': inside_pattern
+        }
+
     def plot_flow_path(self, points, distance, linewidths, include_extra=True):
         """
         Plot the flow path.

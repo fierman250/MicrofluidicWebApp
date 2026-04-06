@@ -7,7 +7,6 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Tuple
 from iGenerator import iGenerator
-from ModelGenerator import ModelGenerator3D
 
 app = FastAPI(title="Microfluidic Property Prediction API")
 
@@ -27,6 +26,11 @@ class PredictionRequest(BaseModel):
     cwidth: float
     cspace: float
     selected_points: List[str]
+    # Optional 3D Geometry parameters
+    upper_thickness: float = 0.5
+    bottom_thickness: float = 0.5
+    inlet_diameter: float = 6.0
+    inlet_y_dist: float = 16.5
 
 def interpret_points_backend(point_names: List[str], xbasic: float, ybasic: float) -> List[Tuple[float, float]]:
     points = []
@@ -84,61 +88,87 @@ async def predict_properties(request: PredictionRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+from ModelGeneratorCQ import ModelGeneratorCQ
+
 @app.post("/api/generate-model")
 async def generate_model(request: PredictionRequest):
     try:
-        # 1. First, regenerate the flow path image since we need it for the middle mask
+        # 1. Initialize iGenerator
         igen = iGenerator(request.cdepth, request.cwidth, request.cspace)
         Cnums = igen.get_cnums()
-        variables = igen.variables
         
-        # Calculate bases
-        xbasic = ((request.cwidth * Cnums) + (request.cspace * Cnums)) * 10
-        ybasic = ((request.cwidth * Cnums) + (request.cspace * Cnums)) * 10
+        # Calculate bases in True Millimeters natively!
+        xbasic_mm = (request.cwidth + request.cspace) * Cnums
+        ybasic_mm = (request.cwidth + request.cspace) * Cnums
+        physical_points_mm = interpret_points_backend(request.selected_points, xbasic_mm, ybasic_mm)
         
-        physical_points = interpret_points_backend(request.selected_points, xbasic, ybasic)
+        # Get raw shapely objects for vector modeling at literal mm scale
+        shape_offset_mm = request.cwidth + request.cspace
+        shapely_data = igen.get_shapely_objects(physical_points_mm, shape_offset_mm)
         
-        # Get the flow path image buffer
-        img_input_buf = igen.plot_flow_path(
-            physical_points,
-            distance=variables['LSpace'],
-            linewidths=variables['LWidth']
+        # 2. Generate the 3D Model using CadQuery
+        model_gen = ModelGeneratorCQ(
+            chip_width=25.0,
+            chip_height=40.0,
+            glass_padding=1.0,
+            upper_thickness=request.upper_thickness,
+            bottom_thickness=request.bottom_thickness,
+            inlet_diameter=request.inlet_diameter,
+            inlet_y_dist=request.inlet_y_dist,
+            outer_x_thickness=0.6,
+            outer_y_thickness=0.8,
+            inner_bridge_thickness=0.5,
+            funnel_length_y=8.0,
+            funnel_length_x=6.0,
+            funnel_tangent_ratio=0.3
         )
         
-        # Determine inlet and outlet positions
-        inlet_pos = None
-        outlet_pos = None
-        if len(physical_points) > 0:
-            inlet_pos = physical_points[0]
-            outlet_pos = physical_points[-1]
-            
-        # 2. Generate the 3D Model
-        model_gen = ModelGenerator3D(slices_folder="Repository")
         output_filename = "Microfluidic_Geometry"
         
-        model, volume = model_gen.generate_model(
-            upper_thickness=4, 
-            middle_thickness=4, 
-            bottom_thickness=4,
-            apply_smoothing=False, 
-            output_filename=output_filename, 
-            save_stl=True,  # We want to save it so we can return the file
-            middle_image_buf=img_input_buf,
-            inlet_pos=inlet_pos,
-            outlet_pos=outlet_pos
+        chip, step_path, stl_path = model_gen.generate_model_cq(
+            cwidth=request.cwidth,
+            cdepth=request.cdepth,
+            shapely_data=shapely_data,
+            output_filename=output_filename
         )
         
-        stl_path = f"{output_filename}.stl"
         if not os.path.exists(stl_path):
-            raise FileNotFoundError("STL file was not created properly.")
+            raise FileNotFoundError("CadQuery STL file was not created properly.")
             
-        # 3. Return the generic file response
+        # 3. Return the file
         return FileResponse(path=stl_path, media_type='application/octet-stream', filename="Microfluidic_Geometry.stl")
         
     except Exception as e:
         import traceback
-        traceback.print_exc()
+        import sys
+        
+        # Diagnostic: Test mapbox_earcut directly to see WHY Trimesh couldn't use it
+        earcut_err = "No import error"
+        try:
+            import mapbox_earcut
+            try:
+                # Test if it runs
+                test_verts = [[0, 0], [1, 0], [1, 1], [0, 1]]
+                test_rings = [4]
+                mapbox_earcut.triangulate_float32(test_verts, test_rings)
+            except Exception as inner_e:
+                earcut_err = f"Run Error: {str(inner_e)}"
+        except ImportError as ie:
+            earcut_err = f"Import Error: {str(ie)}"
+            
+        with open("backend_error.log", "w") as f:
+            f.write(f"Mapbox Earcut Diagnostic:\n{earcut_err}\n\n")
+            f.write("Original Traceback:\n")
+            traceback.print_exc(file=f)
+            
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/download-step")
+async def download_step():
+    step_path = "Microfluidic_Geometry.step"
+    if not os.path.exists(step_path):
+        raise HTTPException(status_code=404, detail="STEP file not found. Generate a model first.")
+    return FileResponse(path=step_path, media_type='application/octet-stream', filename="Microfluidic_Geometry.step")
 
 if __name__ == "__main__":
     import uvicorn

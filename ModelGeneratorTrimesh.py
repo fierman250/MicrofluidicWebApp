@@ -11,6 +11,9 @@ import numpy as np
 import io
 from PIL import Image
 from Repository.vox2STL import vox2stl
+import trimesh
+from shapely.geometry import Polygon, MultiPolygon, LineString
+from shapely.ops import unary_union
 
 # Default pattern image dimensions
 PATTERN_WIDTH = 1125
@@ -312,34 +315,116 @@ class ModelGenerator3D:
         
         return all_slices
     
-    def generate_model(self, upper_thickness, middle_thickness, bottom_thickness, 
-                     apply_smoothing=False, output_filename="Microfluidic_Geometry", save_stl=False,
-                     middle_image_buf=None, inlet_pos=None, outlet_pos=None):
-        """Generate 3D model from slices.
+    def generate_model_vector(self, upper_thickness, middle_thickness, bottom_thickness, 
+                             cwidth, cdepth, shapely_data, output_filename="Microfluidic_Geometry", 
+                             save_stl=False):
+        """Generate high-quality 3D model using vector extrusion (CAD-style).
         
-        Args:
-            upper_thickness: Number of slices for upper region
-            middle_thickness: Number of slices for middle region
-            bottom_thickness: Number of slices for bottom region
-            apply_smoothing: Whether to apply smoothing
-            output_filename: Output filename for STL
-            save_stl: Whether to save STL file
-            middle_image_buf: Optional BytesIO buffer for custom middle pattern image
-            inlet_pos: Optional (x, y) position for inlet hole in pattern coordinates
-            outlet_pos: Optional (x, y) position for outlet hole in pattern coordinates
+        This method uses 2D boolean operations before extrusion to ensure maximum
+        reliability and performance without external 3D engine dependencies.
         """
-        all_slices = self.build_geometry(
-            upper_thickness, middle_thickness, bottom_thickness, 
-            middle_image_buf=middle_image_buf,
-            inlet_pos=inlet_pos,
-            outlet_pos=outlet_pos
-        )
-        if len(all_slices) == 0:
-            raise ValueError("No slices found! Please check the slices folder.")
+        # 1. Dimensions based on XGRID and YGRID
+        chip_width = 225.0
+        chip_height = 360.0
+        chip_2d = Polygon([
+            (-chip_width/2, -chip_height/2),
+            (chip_width/2, -chip_height/2),
+            (chip_width/2, chip_height/2),
+            (-chip_width/2, chip_height/2)
+        ])
         
-        volume = self.create_3d_volume(all_slices)
-        model = vox2stl(vox=volume, loc='.', filename=output_filename, save=save_stl, smooth=apply_smoothing)
-        return model, volume
+        # 2. Prepare Channel Data
+        buffer_dist = cwidth / 2.0
+        all_paths = [shapely_data['main_path']]
+        all_paths.extend(shapely_data['outside_pattern'])
+        all_paths.extend(shapely_data['inside_pattern'])
+        
+        # Create left-side channel polygons
+        left_polys = [path.buffer(buffer_dist, cap_style=2, join_style=2) for path in all_paths]
+        
+        # Create mirrored right-side channel polygons
+        right_polys = []
+        for poly in left_polys:
+            if poly.is_empty: continue
+            # Handle MultiPolygons if buffer returned them
+            geoms = poly.geoms if hasattr(poly, 'geoms') else [poly]
+            for g in geoms:
+                coords = np.array(g.exterior.coords)
+                mirrored_coords = coords.copy()
+                mirrored_coords[:, 0] *= -1
+                # Flip orientation for mirrored polygon to keep it valid
+                right_polys.append(Polygon(mirrored_coords[::-1]))
+        
+        # Union all channels into one mask
+        channels_mask_2d = unary_union(left_polys + right_polys)
+        
+        # 3. Create Hole Data
+        inlet_pt = shapely_data['main_path'].coords[0]
+        outlet_pt = shapely_data['main_path'].coords[-1]
+        hole_rad = 30.0
+        
+        hole_locations = [
+            (inlet_pt[0], -Y_COOR),   # Left Inlet
+            (-inlet_pt[0], -Y_COOR),  # Right Inlet
+            (outlet_pt[0], Y_COOR),   # Left Outlet
+            (-outlet_pt[0], Y_COOR)   # Right Outlet
+        ]
+        
+        holes_polys = [Polygon([
+            (h[0] + hole_rad * np.cos(t), h[1] + hole_rad * np.sin(t))
+            for t in np.linspace(0, 2*np.pi, 32)
+        ]) for h in hole_locations]
+        holes_mask_2d = unary_union(holes_polys)
+        
+        def extrude_shape(shape, height):
+            """Helper to extrude either a single Polygon or a MultiPolygon."""
+            if hasattr(shape, 'geoms'):  # MultiPolygon or GeometryCollection
+                meshes = []
+                for poly in shape.geoms:
+                    # Ignore empty polygons or Lines/Points
+                    if poly.is_empty or poly.geom_type != 'Polygon':
+                        continue
+                    try:
+                        meshes.append(trimesh.creation.extrude_polygon(poly, height=height))
+                    except Exception as e:
+                        print(f"Skipping invalid polygon during extrusion: {e}")
+                if not meshes:
+                    # Return an empty mesh if nothing could be extruded
+                    return trimesh.Trimesh()
+                return trimesh.util.concatenate(meshes)
+            elif shape.geom_type == 'Polygon' and not shape.is_empty:
+                return trimesh.creation.extrude_polygon(shape, height=height)
+            else:
+                return trimesh.Trimesh()
+
+        # 4. Create Layers by Stacking
+        layers = []
+        
+        # A. Bottom Layer (Solid)
+        bottom_layer = extrude_shape(chip_2d, height=bottom_thickness)
+        layers.append(bottom_layer)
+        
+        # B. Middle Layer (Chip minus Channels)
+        # Note: We only subtract channels from the middle thickness
+        middle_2d_shape = chip_2d.difference(channels_mask_2d)
+        middle_layer = extrude_shape(middle_2d_shape, height=middle_thickness)
+        middle_layer.apply_translation([0, 0, bottom_thickness])
+        layers.append(middle_layer)
+        
+        # C. Upper Layer (Chip minus Holes)
+        # Also subtract holes from upper layer
+        upper_2d_shape = chip_2d.difference(holes_mask_2d)
+        upper_layer = extrude_shape(upper_2d_shape, height=upper_thickness)
+        upper_layer.apply_translation([0, 0, bottom_thickness + middle_thickness])
+        layers.append(upper_layer)
+        
+        # 5. Concatenate all layers into final model
+        model = trimesh.util.concatenate(layers)
+        
+        if save_stl:
+            model.export(output_filename + ".stl")
+            
+        return model, None
 
 # ==========================================================================================
 # SECTION 3: MODEL VIEWER POPUP CLASS

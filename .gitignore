@@ -14,6 +14,7 @@ build/
 .venv
 env/
 venv/
+3DModelDev
 
 # ============================================================
 # Deep Learning model weights (tracked via Git LFS)
