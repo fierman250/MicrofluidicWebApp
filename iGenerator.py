@@ -62,8 +62,16 @@ class iGenerator:
                          for i in range(1, 40)]
         return outside_pattern, inside_pattern
 
-    def plot_flow_path(self, points, distance, linewidths):
-        """Plot the flow path based on the given points, distance, and line widths."""
+    def plot_flow_path(self, points, distance, linewidths, include_extra=True):
+        """
+        Plot the flow path.
+        Args:
+            points: flow path coordinates
+            distance: LSpace
+            linewidths: LWidth
+            include_extra: If True, draws border, inlet/outlet circles, and connectors (for UI/3D).
+                          If False, draws only the channel pattern (for DL Prediction).
+        """
         XGrid, YGrid = XGRID, YGRID
         fig, (ax_left, ax_right) = plt.subplots(1, 2, figsize=PATTERN_FIGSIZE, dpi=PATTERN_DPI)
         plt.subplots_adjust(wspace=0)
@@ -75,15 +83,41 @@ class iGenerator:
         x_coords, y_coords = zip(*points)
         outside_pattern, inside_pattern = self.offset(points, distance)
         
+        # Metadata for extras
+        Y_COOR_VAL = 142   #Default 139.5
+        HOLE_RADIUS_PX = 150 #Default 150
+        HOLE_RAD_COORD = HOLE_RADIUS_PX / 5.0
+
         for ax, mirror, xlim in zip([ax_right, ax_left], [1, -1], 
                                      [(0, XGrid), (-XGrid, 0)]):
+            
+            if include_extra:
+                # 1. Draw Outer Channel / Boundary
+                border_x = [0, mirror * XGrid, mirror * XGrid, 0, 0]
+                border_y = [-YGrid/2, -YGrid/2, YGrid/2, YGrid/2, -YGrid/2]
+                ax.plot(border_x, border_y, 'black', linewidth=linewidths*2.5)
+
+                # 2. Draw Inlet and Outlet Circles
+                inlet_circle = plt.Circle((mirror * points[0][0], -Y_COOR_VAL), HOLE_RAD_COORD, color='black', fill=True)
+                outlet_circle = plt.Circle((mirror * points[-1][0], Y_COOR_VAL), HOLE_RAD_COORD, color='black', fill=True)
+                ax.add_patch(inlet_circle)
+                ax.add_patch(outlet_circle)
+
+                # 3. Draw Vertical connectors to inlet/outlet
+                ax.plot([mirror * points[0][0], mirror * points[0][0]], [points[0][1], -Y_COOR_VAL], 'black', linewidth=linewidths)
+                ax.plot([mirror * points[-1][0], mirror * points[-1][0]], [points[-1][1], Y_COOR_VAL], 'black', linewidth=linewidths)
+
+            # 4. Draw main path
             ax.plot(mirror * np.array(x_coords), np.array(y_coords), 
                    'black', linestyle='-', linewidth=linewidths)
+            
+            # 5. Draw fill patterns
             for pattern in [outside_pattern, inside_pattern]:
                 for line in pattern:
                     ax.plot(mirror * np.array(line.coords.xy[0]), 
                            np.array(line.coords.xy[1]), 
                            'black', linestyle='-', linewidth=linewidths)
+            
             ax.set_xlim(xlim)
             ax.set_ylim(-YGrid / 2, YGrid / 2)
 
@@ -139,19 +173,26 @@ class iGenerator:
             nparams (list): Numerical parameters [cdepth, cwidth, cspace]
             
         Returns:
-            tuple: (predictions, dl_input_img, img_input_buf, selected_points)
+            tuple: (predictions, dl_input_img, img_output_buf, selected_points)
         """
         variables = self.variables
         
-        # Generate flow path visualization using provided points
-        img_input_buf = self.plot_flow_path(
+        # 1. Generate CLEAN image for prediction ONLY (no border/circles)
+        img_for_model_buf = self.plot_flow_path(
             selected_points, 
             distance=variables['LSpace'], 
-            linewidths=variables['LWidth']
+            linewidths=variables['LWidth'],
+            include_extra=False
         )
+        dl_input_img = self.process_image(img_for_model_buf)
         
-        # Process image for model input
-        dl_input_img = self.process_image(img_input_buf)
+        # 2. Generate FULL image for visualization (with border/circles)
+        img_output_buf = self.plot_flow_path(
+            selected_points, 
+            distance=variables['LSpace'], 
+            linewidths=variables['LWidth'],
+            include_extra=True
+        )
         
         # Prepare numerical parameters as tensor
         nparams_tensor = torch.tensor(
@@ -173,4 +214,4 @@ class iGenerator:
                    self.y_scaler.center_[i])
             predictions.append(pred)
         
-        return predictions, dl_input_img, img_input_buf, selected_points
+        return predictions, dl_input_img, img_output_buf, selected_points
