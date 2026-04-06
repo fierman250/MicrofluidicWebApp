@@ -220,10 +220,9 @@ const GridSelector = ({ onSelectionChange, onClearRef }) => {
 
   return (
     <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <h2>Pattern Selection</h2>
-
-      {/* How-to-use guide toggle */}
-      <div style={{ marginBottom: '1rem' }}>
+      {/* Header row: title left, guide button right */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+        <h2 style={{ margin: 0 }}>Pattern Selection for the Main Channel Line</h2>
         <button
           onClick={() => setShowGuide(v => !v)}
           style={{
@@ -239,27 +238,30 @@ const GridSelector = ({ onSelectionChange, onClearRef }) => {
             alignItems: 'center',
             gap: '0.4rem',
             transition: 'all 0.2s',
+            flexShrink: 0,
+            marginLeft: '1rem',
           }}
         >
           {showGuide ? '✕ Hide' : '? How to Use'}
         </button>
-
-        {showGuide && (
-          <div style={{
-            marginTop: '0.75rem',
-            borderRadius: '10px',
-            overflow: 'hidden',
-            border: '1px solid rgba(255,255,255,0.08)',
-            background: 'rgba(0,0,0,0.25)',
-          }}>
-            <img
-              src="/howtousepointselector.png"
-              alt="How to use the point selector"
-              style={{ width: '100%', display: 'block' }}
-            />
-          </div>
-        )}
       </div>
+
+      {/* Guide image — collapsible */}
+      {showGuide && (
+        <div style={{
+          marginBottom: '0.75rem',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'rgba(0,0,0,0.25)',
+        }}>
+          <img
+            src="/howtousepointselector.png"
+            alt="How to use the point selector"
+            style={{ width: '100%', display: 'block' }}
+          />
+        </div>
+      )}
 
       <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
         Click &amp; drag across points (row 1→9, up to 2 per row). Or tap each point individually.

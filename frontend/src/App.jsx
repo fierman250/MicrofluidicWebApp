@@ -28,12 +28,12 @@ function App() {
     { id: 'E22', name: "Young's Modulus (Y)", type: 'Mechanical' },
     { id: 'YS22', name: "Yield Strength (Y)", type: 'Mechanical' },
     { id: 'v22', name: "Poisson's Ratio (Y)", type: 'Mechanical' },
-    { id: 'k11', name: "Thermal Cond. (X)", type: 'Thermal' },
-    { id: 'k22', name: "Thermal Cond. (Y)", type: 'Thermal' },
-    { id: 'k33', name: "Thermal Cond. (Z)", type: 'Thermal' },
-    { id: 'CTE11', name: "Thermal Exp. (X)", type: 'Thermal' },
-    { id: 'CTE22', name: "Thermal Exp. (Y)", type: 'Thermal' },
-    { id: 'CTE33', name: "Thermal Exp. (Z)", type: 'Thermal' }
+    { id: 'k11', name: "Thermal Conductivity (X)", type: 'Thermal' },
+    { id: 'k22', name: "Thermal Conductivity (Y)", type: 'Thermal' },
+    { id: 'k33', name: "Thermal Conductivity (Z)", type: 'Thermal' },
+    { id: 'CTE11', name: "Coefficient of Thermal Expansion (X)", type: 'Thermal' },
+    { id: 'CTE22', name: "Coefficient of Thermal Expansion (Y)", type: 'Thermal' },
+    { id: 'CTE33', name: "Coefficient of Thermal Expansion (Z)", type: 'Thermal' }
   ];
 
   const handlePredict = async () => {
@@ -134,19 +134,19 @@ function App() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', overflowY: 'auto', maxHeight: 'calc(100vh - 10rem)', paddingRight: '4px' }}>
           
           <div className="glass-panel" style={{ flex: 'none' }}>
-            <h2><Activity size={24} color="var(--primary)" /> Parameters</h2>
+            <h2><Activity size={24} color="var(--primary)" /> Microfluidic Channel Parameters</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
               <div className="input-group">
-                <label className="input-label">Channel Depth</label>
-                <input type="number" step="0.01" className="input-field" value={cdepth} onChange={e => setCdepth(e.target.value)} />
+                <label className="input-label">Channel Depth <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>(0.08 – 0.20 mm)</span></label>
+                <input type="number" step="0.01" min="0.08" max="0.20" className="input-field" value={cdepth} onChange={e => setCdepth(e.target.value)} />
               </div>
               <div className="input-group">
-                <label className="input-label">Channel Width</label>
-                <input type="number" step="0.01" className="input-field" value={cwidth} onChange={e => setCwidth(e.target.value)} />
+                <label className="input-label">Channel Width <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>(0.1 – 0.4 mm)</span></label>
+                <input type="number" step="0.01" min="0.1" max="0.4" className="input-field" value={cwidth} onChange={e => setCwidth(e.target.value)} />
               </div>
               <div className="input-group">
-                <label className="input-label">Channel Space</label>
-                <input type="number" step="0.01" className="input-field" value={cspace} onChange={e => setCspace(e.target.value)} />
+                <label className="input-label">Channel Space <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>(0.1 – 0.4 mm)</span></label>
+                <input type="number" step="0.01" min="0.1" max="0.4" className="input-field" value={cspace} onChange={e => setCspace(e.target.value)} />
               </div>
             </div>
             
@@ -180,8 +180,21 @@ function App() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', overflowY: 'auto', maxHeight: 'calc(100vh - 10rem)', paddingRight: '4px' }}>
           
           <div className="glass-panel preview-area">
-            <h2>Flow Visualization</h2>
-            <div className="preview-box">
+            <h2>Flow Visualization (2D Top View)</h2>
+
+            {/* Color legend - top */}
+            <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '0.75rem', fontSize: '0.78rem', color: 'var(--text-muted)', justifyContent: 'center' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ width: '14px', height: '14px', background: '#000', borderRadius: '3px', flexShrink: 0, border: '1px solid #555' }} />
+                Black — Channel Fluid
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ width: '14px', height: '14px', background: '#fff', borderRadius: '3px', flexShrink: 0, border: '1px solid #555' }} />
+                White — Channel Wall
+              </span>
+            </div>
+
+            <div className="preview-box" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
               {isLoading && (
                 <div className="loading-overlay">
                   <div className="spinner"></div>
@@ -193,7 +206,7 @@ function App() {
                 <div style={{ color: '#94a3b8' }}>Awaiting pattern generation...</div>
               )}
             </div>
-            
+
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem', gap: '1rem', flexWrap: 'wrap' }}>
               {stlBlobUrl && (
                 <button 
@@ -244,10 +257,10 @@ function App() {
           )}
 
           <div className="glass-panel">
-            <h2><Box size={24} color="var(--primary)" /> Predictions</h2>
+            <h2><Box size={24} color="var(--primary)" /> Prediction Results</h2>
             {predictions ? (
               <>
-                <h3>Mechanical</h3>
+                <h3>Mechanical Properties</h3>
                 <div className="properties-grid" style={{ marginBottom: '1.5rem' }}>
                   {propertyNames.filter(p => p.type === 'Mechanical').map((prop, idx) => {
                     const absIdx = propertyNames.findIndex(p => p.id === prop.id);
@@ -261,7 +274,7 @@ function App() {
                   })}
                 </div>
                 
-                <h3>Thermal</h3>
+                <h3>Thermal Properties</h3>
                 <div className="properties-grid">
                   {propertyNames.filter(p => p.type === 'Thermal').map((prop, idx) => {
                     const absIdx = propertyNames.findIndex(p => p.id === prop.id);
