@@ -1,0 +1,36 @@
+# Microfluidic Property Prediction GUI - Python Dependencies
+# Python 3.8 or higher required
+
+# Deep Learning Framework
+torch>=1.9.0
+torchvision>=0.10.0
+
+# Image Processing
+Pillow>=8.0.0
+numpy>=1.21.0
+
+# 3D Visualization and Mesh Processing
+vispy>=0.9.0
+trimesh>=3.9.0
+
+# Geometric Operations
+shapely>=1.8.0
+
+# Data Processing and Machine Learning
+joblib>=1.0.0
+scikit-learn>=0.24.0
+
+# Plotting and Visualization
+matplotlib>=3.4.0
+
+# GUI Backend for Vispy (Tkinter)
+# pyopengltk>=0.1.0
+
+# Optional: For better performance
+# numba>=0.56.0  # Uncomment if needed for performance optimization
+
+# Web Backend API Framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
