@@ -180,7 +180,7 @@ function App() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', overflowY: 'auto', maxHeight: 'calc(100vh - 10rem)', paddingRight: '4px' }}>
           
           <div className="glass-panel preview-area">
-            <h2>Flow Visualization (2D Top View)</h2>
+            <h2>Microfluidic Channel Visualization (2D Top View)</h2>
 
             {/* Color legend - top */}
             <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '0.75rem', fontSize: '0.78rem', color: 'var(--text-muted)', justifyContent: 'center' }}>

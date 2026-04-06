@@ -21,8 +21,8 @@ XGRID = 112.5
 YGRID = 360
 
 # Inlet/Outlet position control
-Y_COOR = 139.5  # Y coordinate offset for inlet/outlet positions
-HOLE_RADIUS = 58  # Radius of inlet/outlet holes in pixels
+Y_COOR = 142  # Y coordinate offset for inlet/outlet positions (Default 139.5)
+HOLE_RADIUS = 150  # Radius of inlet/outlet holes in pixels (Default 150)
 BORDER_WIDTH = 10  # Width of white border added to middle mask
 
 # ==========================================================================================
