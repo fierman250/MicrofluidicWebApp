@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Tuple
 from iGenerator import iGenerator
-from MeshGenerator import MeshGenerator3D
+from ModelGenerator import ModelGenerator3D
 
 app = FastAPI(title="Microfluidic Property Prediction API")
 
@@ -112,11 +112,11 @@ async def generate_model(request: PredictionRequest):
             inlet_pos = physical_points[0]
             outlet_pos = physical_points[-1]
             
-        # 2. Generate the 3D Mesh
-        mesh_gen = MeshGenerator3D(slices_folder="Repository")
+        # 2. Generate the 3D Model
+        model_gen = ModelGenerator3D(slices_folder="Repository")
         output_filename = "Microfluidic_Geometry"
         
-        mesh, volume = mesh_gen.generate_mesh(
+        model, volume = model_gen.generate_model(
             upper_thickness=4, 
             middle_thickness=4, 
             bottom_thickness=4,

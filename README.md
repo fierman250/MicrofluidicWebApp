@@ -12,7 +12,7 @@ A web-based platform for predicting material properties (mechanical & thermal) o
 - **Pattern Selection Grid** — Draw your microfluidic channel path on a 9×3 interactive grid (drag to select, like a phone pattern lock)
 - **Deep Learning Prediction** — Predicts 12 material properties (Young's Modulus, Yield Strength, Poisson's Ratio, Thermal Conductivity, Thermal Expansion) from the pattern
 - **Flow Path Visualization** — Renders the generated flow path image after prediction
-- **3D Model Viewer** — Generates and displays an interactive 3D STL model in your browser
+- **3D Model Viewer** — Generates and displays an interactive 3D model in your browser
 - **STL Download** — Export the generated 3D geometry as an `.stl` file
 
 ---
@@ -40,7 +40,7 @@ Key packages:
 | `numpy` | Numerical computation |
 | `Pillow` | Image processing |
 | `matplotlib` | Flow path rendering |
-| `trimesh` | 3D mesh processing |
+| `trimesh` | 3D model processing |
 | `shapely` | Geometric path offsetting |
 | `scikit-learn` | Data scaling |
 | `joblib` | Model/scaler loading |
@@ -106,7 +106,7 @@ Open this URL in your browser.
 WebAPP/
 ├── main.py                  # FastAPI backend entry point
 ├── iGenerator.py            # Flow path generation & DL prediction
-├── MeshGenerator.py         # 3D model generation from image slices
+├── ModelGenerator.py        # 3D model generation from image slices
 ├── requirements.txt         # Python dependencies
 ├── Repository/
 │   ├── DLModel.py           # PyTorch model architecture (CombinedNet)

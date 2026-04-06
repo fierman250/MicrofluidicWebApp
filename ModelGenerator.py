@@ -1,6 +1,6 @@
 """
-3D mesh generation from image slices.
-Contains MeshGenerator3D and MeshViewerPopup classes.
+3D model generation from image slices.
+Contains ModelGenerator3D and ModelViewerPopup classes.
 """
 
 # ==========================================================================================
@@ -22,14 +22,14 @@ YGRID = 360
 
 # Inlet/Outlet position control
 Y_COOR = 142  # Y coordinate offset for inlet/outlet positions (Default 139.5)
-HOLE_RADIUS = 150  # Radius of inlet/outlet holes in pixels (Default 150)
+HOLE_RADIUS = 58  # Radius of inlet/outlet holes in pixels (Default 58 - Not in PX)
 BORDER_WIDTH = 10  # Width of white border added to middle mask
 
 # ==========================================================================================
-# SECTION 2: MESH GENERATOR CLASS
+# SECTION 2: MODEL GENERATOR CLASS
 # ==========================================================================================
-class MeshGenerator3D:
-    """Handles 3D mesh generation from image masks."""
+class ModelGenerator3D:
+    """Handles 3D model generation from image masks."""
     
     def __init__(self, slices_folder="Repository"):
         self.slices_folder = slices_folder
@@ -312,10 +312,10 @@ class MeshGenerator3D:
         
         return all_slices
     
-    def generate_mesh(self, upper_thickness, middle_thickness, bottom_thickness, 
+    def generate_model(self, upper_thickness, middle_thickness, bottom_thickness, 
                      apply_smoothing=False, output_filename="Microfluidic_Geometry", save_stl=False,
                      middle_image_buf=None, inlet_pos=None, outlet_pos=None):
-        """Generate 3D mesh from slices.
+        """Generate 3D model from slices.
         
         Args:
             upper_thickness: Number of slices for upper region
@@ -338,24 +338,24 @@ class MeshGenerator3D:
             raise ValueError("No slices found! Please check the slices folder.")
         
         volume = self.create_3d_volume(all_slices)
-        mesh = vox2stl(vox=volume, loc='.', filename=output_filename, save=save_stl, smooth=apply_smoothing)
-        return mesh, volume
+        model = vox2stl(vox=volume, loc='.', filename=output_filename, save=save_stl, smooth=apply_smoothing)
+        return model, volume
 
 # ==========================================================================================
-# SECTION 3: MESH VIEWER POPUP CLASS
+# SECTION 3: MODEL VIEWER POPUP CLASS
 # ==========================================================================================
-class MeshViewerPopup:
-    """Popup window for detailed 3D mesh visualization."""
+class ModelViewerPopup:
+    """Popup window for detailed 3D model visualization."""
     
-    def __init__(self, parent, mesh):
-        self.mesh = mesh
+    def __init__(self, parent, model):
+        self.model = model
         self.window = tk.Toplevel(parent)
-        self.window.title("3D Mesh Viewer - Detailed Visualization")
+        self.window.title("3D Model Viewer - Detailed Visualization")
         self.window.geometry("1000x800")
         self.window.configure(bg='#f5f5f5')
         
         # Title
-        tk.Label(self.window, text="3D Mesh Detailed View", font=('Arial', 16, 'bold'),
+        tk.Label(self.window, text="3D Model Detailed View", font=('Arial', 16, 'bold'),
                 bg='#f5f5f5', fg='black').pack(pady=10)
         
         # Controls
@@ -388,24 +388,24 @@ class MeshViewerPopup:
         self.view = self.canvas.central_widget.add_view(bgcolor='white')
         self.canvas.show()
         self.use_vispy = True
-        self.visualize_mesh_vispy()
+        self.visualize_model_vispy()
     
-    def visualize_mesh_vispy(self):
-        """Visualize mesh using Vispy."""
+    def visualize_model_vispy(self):
+        """Visualize model using Vispy."""
         if self.view is not None:
             self.view.parent = None
         self.view = self.canvas.central_widget.add_view(bgcolor='white')
         
-        vertices = self.mesh.vertices.astype('float32')
-        faces = self.mesh.faces.astype('uint32')
+        vertices = self.model.vertices.astype('float32')
+        faces = self.model.faces.astype('uint32')
         view_mode = self.view_mode_var.get()
         types = [s.strip() for s in view_mode.split('+')]
         
         for plot_type in types:
             if plot_type == "solid":
-                mesh_visual = vispy.scene.visuals.Mesh(vertices=vertices, faces=faces,
+                model_visual = vispy.scene.visuals.Mesh(vertices=vertices, faces=faces,
                                                        shading='smooth', color='lightblue')
-                self.view.add(mesh_visual)
+                self.view.add(model_visual)
             elif plot_type == "wireframe":
                 n_faces = len(faces)
                 ix = np.tile([0, 1, 1, 2, 2, 0], n_faces) + np.repeat(np.arange(0, 3*n_faces, 3), 6)
@@ -418,8 +418,8 @@ class MeshViewerPopup:
         self.view.camera.set_range()
     
     def update_view(self, view_mode=None):
-        """Update mesh view when view mode changes."""
-        self.visualize_mesh_vispy()
+        """Update model view when view mode changes."""
+        self.visualize_model_vispy()
     
     def view_xy(self):
         if self.use_vispy and self.view and self.view.camera:
@@ -442,4 +442,3 @@ class MeshViewerPopup:
     def reset_view(self):
         if self.use_vispy and self.view and self.view.camera:
             self.view.camera.reset()
-
