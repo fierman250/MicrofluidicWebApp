@@ -92,10 +92,18 @@ class iGenerator:
                                      [(0, XGrid), (-XGrid, 0)]):
             
             if include_extra:
-                # 1. Draw Outer Channel / Boundary
-                border_x = [0, mirror * XGrid, mirror * XGrid, 0, 0]
-                border_y = [-YGrid/2, -YGrid/2, YGrid/2, YGrid/2, -YGrid/2]
-                ax.plot(border_x, border_y, 'black', linewidth=linewidths*2.5)
+                # 1. Draw Outer Channel Lines (individually adjustable)
+                
+                # X-direction channels (horizontal: top and bottom)
+                x_channel_lw = linewidths * 5  # Adjust X channel linewidth here
+                ax.plot([0, mirror * XGrid], [-YGrid/2, -YGrid/2], 'black', linewidth=x_channel_lw)  # Top
+                ax.plot([0, mirror * XGrid], [YGrid/2, YGrid/2], 'black', linewidth=x_channel_lw)    # Bottom
+                
+                # Y-direction channels (vertical: left and right)
+                y_left_lw = linewidths * 1.25   # Adjust Y-left channel linewidth here
+                y_right_lw = linewidths * 2.5  # Adjust Y-right channel linewidth here
+                ax.plot([0, 0], [-YGrid/2, YGrid/2], 'black', linewidth=y_left_lw)                     # Y-left (center edge)
+                ax.plot([mirror * XGrid, mirror * XGrid], [-YGrid/2, YGrid/2], 'black', linewidth=y_right_lw)  # Y-right (outer edge)
 
                 # 2. Draw Inlet and Outlet Circles
                 inlet_circle = plt.Circle((mirror * points[0][0], -Y_COOR_VAL), HOLE_RAD_COORD, color='black', fill=True)
