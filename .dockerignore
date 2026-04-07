@@ -1,0 +1,35 @@
+# Local development and node environment
+node_modules/
+dist/
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Generated CAD models (don't upload test files)
+*.stl
+*.step
+*.log
+
+# Docker metadata
+Dockerfile
+.dockerignore
+
+# Misc
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.pytest_cache/
