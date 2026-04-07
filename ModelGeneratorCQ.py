@@ -216,9 +216,13 @@ class ModelGeneratorCQ:
             # Since the chip is centered, move it so the left edge (X = -12.5) is at X = 0
             shift_x = self.chip_width / 2.0
             center_space = 0.5 / 2.0
-            chip = chip.translate((shift_x + center_space, 0, 0))
-            # Mirror across the origin's YZ plane and union
-            chip = chip.mirror("YZ", union=True)
+            # Position the original (Body 1)
+            chip = chip.translate((-(shift_x + center_space), 0, 0))
+            # Create the double-mirrored version (Body 2)
+            # 1. Mirror horizontally (YZ), 2. Mirror vertically (XZ)
+            mirrored_body = chip.mirror("YZ", union=False).mirror("XZ", union=False)
+            # Assemble them
+            chip = chip.union(mirrored_body)
             
             # --- FILL THE CENTER HOLE ---
             filler = (
